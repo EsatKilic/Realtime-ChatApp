@@ -13,14 +13,19 @@ import {
   } from 'react-native-popup-menu';
 import { MenuItem } from './CustomMenuItems';
 import { AntDesign, Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const ios = Platform.OS=='ios';
 export default function HomeHeader() {
     const {user, logout} = useAuth();
 
     const {top} = useSafeAreaInsets();
+    const router = useRouter();
     const handleProfile = ()=>{
-
+        router.push('/profile');
+    }
+    const handleSettings = ()=>{
+        router.push('/settings');
     }
 
     const handleLogout = async ()=>{
@@ -60,6 +65,13 @@ export default function HomeHeader() {
                     }
                 }}
             >
+                <MenuItem
+                    text="Settings"
+                    action={handleSettings}
+                    value={null}
+                    icon={<Feather name="settings" size={hp(2.5)} color="#737373" /> }
+                />
+                <Divider />
                 <MenuItem
                     text="Profile"
                     action={handleProfile}
