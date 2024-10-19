@@ -1,11 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, FlatList, Keyboard } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '../../firebaseConfig';
+import { addDoc, collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Dimensions, FlatList, Keyboard, Platform, TextInput, TouchableOpacity, View } from 'react-native';
+import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import GroupChatRoomHeader from '../../components/GroupChatRoomHeader';
 import MessageItem from '../../components/MessageItem';
-import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/authContext';
+import { db } from '../../firebaseConfig';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function GroupChatRoom() {
   const [messages, setMessages] = useState([]);
@@ -13,6 +17,8 @@ export default function GroupChatRoom() {
   const { groupId, groupName, groupImage } = useLocalSearchParams();
   const router = useRouter();
   const scrollViewRef = useRef(null);
+  const { user } = useAuth();
+  const [keyboardHeight] = useState(new Animated.Value(0));
 
   useEffect(() => {
     const q = query(collection(db, 'groups', groupId, 'messages'), orderBy('createdAt', 'asc')); 
@@ -20,7 +26,30 @@ export default function GroupChatRoom() {
       setMessages(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()})));
     });
 
-    return () => unsubscribe();
+    const keyboardWillShow = (event) => {
+      Animated.timing(keyboardHeight, {
+        duration: event.duration,
+        toValue: event.endCoordinates.height,
+        useNativeDriver: false,
+      }).start();
+    };
+
+    const keyboardWillHide = (event) => {
+      Animated.timing(keyboardHeight, {
+        duration: event.duration,
+        toValue: 0,
+        useNativeDriver: false,
+      }).start();
+    };
+
+    const keyboardWillShowSub = Keyboard.addListener('keyboardWillShow', keyboardWillShow);
+    const keyboardWillHideSub = Keyboard.addListener('keyboardWillHide', keyboardWillHide);
+
+    return () => {
+      unsubscribe();
+      keyboardWillShowSub.remove();
+      keyboardWillHideSub.remove();
+    };
   }, [groupId]);
 
   useEffect(() => {
@@ -34,45 +63,75 @@ export default function GroupChatRoom() {
       await addDoc(collection(db, 'groups', groupId, 'messages'), {
         text: inputMessage.trim(),
         createdAt: new Date(),
-        userId: 'currentUserId', 
-        username: 'Current User', 
-        userProfileUrl: 'currentUser.profileUrl', 
+        userId: user.userId, 
+        username: user.username, 
+        userProfileUrl: user.profileUrl, 
       });
       setInputMessage('');
     }
   };
 
   const renderMessage = ({ item }) => (
-    <MessageItem message={item} currentUser={{ userId: 'currentUserId' }} isGroup={true} />
+    <MessageItem message={item} currentUser={user} isGroup={true} />
   );
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+    <View style={{ flex: 1 }}>
       <GroupChatRoomHeader groupName={groupName} groupImage={groupImage} router={router} />
-      <FlatList
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item, index) => index.toString()}
-        ref={scrollViewRef}
-        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-        contentContainerStyle={{ paddingVertical: 10 }}
-      />
-      <View style={{ flexDirection: 'row', padding: 10, marginBottom: Platform.OS === 'ios' ? 20 : 0 }}>
-        <TextInput
-          style={{ flex: 1, borderWidth: 1, borderColor: 'gray', borderRadius: 20, paddingHorizontal: 10, marginRight: 10 }}
-          value={inputMessage}
-          onChangeText={setInputMessage}
-          placeholder="Type a message..."
-          onFocus={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+      <Animated.View style={{ flex: 1, marginBottom: keyboardHeight }}>
+        <FlatList
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+          ref={scrollViewRef}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          contentContainerStyle={{ paddingVertical: 10 }}
         />
-        <TouchableOpacity onPress={sendMessage}>
-          <Ionicons name="send" size={24} color="blue" />
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 10,
+          paddingTop: 10,
+          paddingBottom: Platform.OS === 'ios' ? hp(2.7) : hp(2), // ChatRoom'daki gibi alt boşluk eklendi
+          backgroundColor: 'white',
+          borderTopWidth: 1,
+          borderTopColor: '#E5E5E5',
+        }}>
+          <View style={{
+            flex: 1,
+            backgroundColor: 'white',
+            borderRadius: 25,
+            borderWidth: 1,
+            borderColor: '#E5E5E5',
+            marginRight: 10,
+            paddingHorizontal: 15,
+          }}>
+            <TextInput 
+              value={inputMessage}
+              onChangeText={setInputMessage}
+              placeholder="Type a message..."
+              placeholderTextColor={'gray'}
+              style={{
+                fontSize: hp(2),
+                paddingVertical: 10,
+              }}
+              onFocus={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            />
+          </View>
+          <TouchableOpacity 
+            onPress={sendMessage} 
+            style={{
+              backgroundColor: 'blue',
+              borderRadius: 25,
+              padding: 10,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Ionicons name="send" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    </View>
   );
 }
