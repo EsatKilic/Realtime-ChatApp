@@ -1,19 +1,18 @@
-import { View, Text, Platform } from 'react-native'
-import React from 'react'
-import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AntDesign, Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { blurhash } from '../utils/common';
-import { useAuth } from '../context/authContext';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { Platform, Text, View } from 'react-native';
 import {
     Menu,
     MenuOptions,
-    MenuOption,
-    MenuTrigger,
-  } from 'react-native-popup-menu';
+    MenuTrigger
+} from 'react-native-popup-menu';
+import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../context/authContext';
+import { blurhash } from '../utils/common';
 import { MenuItem } from './CustomMenuItems';
-import { AntDesign, Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 
 const ios = Platform.OS=='ios';
 export default function HomeHeader() {
@@ -41,7 +40,7 @@ export default function HomeHeader() {
         <Menu>
             <MenuTrigger customStyles={{
                 triggerWrapper: {
-                    // trigger wrapper styles
+                  
                 }
             }}>
                 <Image

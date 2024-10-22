@@ -1,11 +1,11 @@
-import { View, Text, Image, TextInput, TouchableOpacity, Pressable, Alert } from 'react-native'
-import React, { useRef, useState } from 'react'
-import {widthPercentageToDP as wp, heightPercentageToDP as hp} from 'react-native-responsive-screen';
-import { StatusBar } from 'expo-status-bar';
 import { Octicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import Loading from '../components/Loading';
+import { StatusBar } from 'expo-status-bar';
+import React, { useRef, useState } from 'react';
+import { Alert, Image, Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { heightPercentageToDP as hp, widthPercentageToDP as wp } from 'react-native-responsive-screen';
 import CustomKeyboardView from '../components/CustomKeyboardView';
+import Loading from '../components/Loading';
 import { useAuth } from '../context/authContext';
 
 export default function SignIn() {
@@ -25,7 +25,7 @@ export default function SignIn() {
         setLoading(true);
         const response = await login(emailRef.current, passwordRef.current);
         setLoading(false);
-        console.log('sign in reposnse: ', response);
+       
         if(!response.success){
             Alert.alert('Sign In', response.msg);
         }
@@ -34,7 +34,6 @@ export default function SignIn() {
     <CustomKeyboardView>
       <StatusBar style="dark" />
       <View style={{paddingTop: hp(8), paddingHorizontal: wp(5)}} className="flex-1 gap-12">
-        {/* signIn image */}
         <View className="items-center">
             <Image style={{height: hp(25)}} resizeMode='contain' source={require('../assets/images/login.png')} />
         </View>
@@ -42,7 +41,6 @@ export default function SignIn() {
 
         <View className="gap-10">
             <Text style={{fontSize: hp(4)}} className="font-bold tracking-wider text-center text-neutral-800">Sign In</Text>
-            {/* inputs */}
             <View className="gap-4">
                 <View style={{height: hp(7)}} className="flex-row gap-4 px-4 bg-neutral-100 items-center rounded-xl">
                     <Octicons name="mail" size={hp(2.7)} color="gray" />
@@ -69,7 +67,6 @@ export default function SignIn() {
                     <Text style={{fontSize: hp(1.8)}} className="font-semibold text-right text-neutral-500">Forgot password?</Text>
                 </View>
 
-                {/* submit button */}
 
                 <View>
                     {
@@ -89,7 +86,6 @@ export default function SignIn() {
 
                 
 
-                {/* sign up text */}
 
                 <View className="flex-row justify-center">
                     <Text style={{fontSize: hp(1.8)}} className="font-semibold text-neutral-500">Don't have an account? </Text>

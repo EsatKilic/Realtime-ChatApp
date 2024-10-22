@@ -1,9 +1,9 @@
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { collection, doc, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import { blurhash, formatDate, getRoomId } from '../utils/common';
-import { collection, doc, onSnapshot, orderBy, query,limit } from 'firebase/firestore';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { db } from '../firebaseConfig';
+import { blurhash, formatDate, getRoomId } from '../utils/common';
 
 export default function ChatItem({ item, router, noBorder, currentUser, isGroup }) {
   const [lastMessage, setLastMessage] = useState(undefined);
@@ -18,10 +18,8 @@ export default function ChatItem({ item, router, noBorder, currentUser, isGroup 
       if (!snapshot.empty) {
         const lastMessageData = snapshot.docs[0].data();
         setLastMessage(lastMessageData);
-        // console.log("Last Message Data:", lastMessageData);
       } else {
         setLastMessage(null);
-        // console.log("No messages found");
       }
     }, (error) => {
       console.error("Error fetching last message:", error);
@@ -56,7 +54,6 @@ export default function ChatItem({ item, router, noBorder, currentUser, isGroup 
     if (lastMessage) {
       const lastMessageUserId = lastMessage.userId;
       
-      // Son mesajı atan kullanıcı ile giriş yapan kullanıcıyı kontrol et
       if (currentUser?.userId === lastMessageUserId) {
         return "You: " + lastMessage.text;
       } else {
@@ -67,10 +64,8 @@ export default function ChatItem({ item, router, noBorder, currentUser, isGroup 
     }
   };
 
-  // Default image URL
   const defaultImageUrl = 'https://via.placeholder.com/150';
 
-  // Get the image URL securely
   const getImageUrl = () => {
     if (isGroup) {
       return item.groupImage || defaultImageUrl;

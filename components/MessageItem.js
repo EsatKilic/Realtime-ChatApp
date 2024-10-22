@@ -5,9 +5,7 @@ import { heightPercentageToDP as hp, widthPercentageToDP as wp } from 'react-nat
 export default function MessageItem({ message, currentUser, isGroup }) {
   const isOwnMessage = message.userId === currentUser.userId;
 
-  console.log('message.userId:', message.userId);
-  console.log('currentUser.userId:', currentUser.userId);
-  console.log('isOwnMessage:', isOwnMessage);
+ 
 
   return (
     <View style={styles.outerContainer}>

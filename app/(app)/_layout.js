@@ -1,7 +1,6 @@
 // (app)/_layout.js
-import { View, Text } from 'react-native';
-import React from 'react';
 import { Stack } from 'expo-router';
+import React from 'react';
 import HomeHeader from '../../components/HomeHeader';
 
 export default function _layout() {
@@ -20,9 +19,9 @@ export default function _layout() {
                 }}
             />
             <Stack.Screen
-                name="settings" // Settings ekranı adı
+                name="settings" 
                 options={{
-                    headerShown: false, // Varsayılan başlık göstermemek için
+                    headerShown: false, 
                 }}
             />
             <Stack.Screen 

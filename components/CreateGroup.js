@@ -1,7 +1,7 @@
+import { addDoc, collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, Image } from 'react-native';
+import { Alert, FlatList, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { db } from '../firebaseConfig';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
 import CustomCheckBox from './CustomCheckBox';
 
 const CreateGroup = ({ onGroupCreated }) => {
@@ -40,7 +40,7 @@ const CreateGroup = ({ onGroupCreated }) => {
         name: groupName.trim(),
         members: selectedUsers,
         createdAt: new Date(),
-        groupImage: groupImageUrl.trim() || null, // Eğer URL boşsa null olarak kaydediyoruz
+        groupImage: groupImageUrl.trim() || null, 
       };
 
       const groupRef = await addDoc(collection(db, 'groups'), newGroup);

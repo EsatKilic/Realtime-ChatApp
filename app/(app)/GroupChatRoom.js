@@ -92,7 +92,7 @@ export default function GroupChatRoom() {
           alignItems: 'center',
           paddingHorizontal: 10,
           paddingTop: 10,
-          paddingBottom: Platform.OS === 'ios' ? hp(2.7) : hp(2), // ChatRoom'daki gibi alt boşluk eklendi
+          paddingBottom: Platform.OS === 'ios' ? hp(2.7) : hp(2), 
           backgroundColor: 'white',
           borderTopWidth: 1,
           borderTopColor: '#E5E5E5',

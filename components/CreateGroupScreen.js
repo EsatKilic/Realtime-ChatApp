@@ -1,19 +1,17 @@
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { View, Modal, Button } from 'react-native';
+import { Button, Modal, View } from 'react-native';
 import CreateGroup from './CreateGroup';
-import { useRouter } from 'expo-router'; // Import router from expo-router
 
 const CreateGroupScreen = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const router = useRouter(); // Use router from expo-router
+  const router = useRouter(); 
 
   const handleGroupCreated = (groupId, groupName, selectedUsers) => {
-    console.log(`New group created with ID: ${groupId}, Name: ${groupName}, Members: ${selectedUsers}`);
     
-    // Grup sohbet ekranına yönlendirme
-    router.push(`/GroupChatRoom?groupId=${groupId}&groupName=${groupName}&members=${JSON.stringify(selectedUsers)}`);
+   router.push(`/GroupChatRoom?groupId=${groupId}&groupName=${groupName}&members=${JSON.stringify(selectedUsers)}`);
     
-    setIsModalVisible(false); // Modalı kapat
+    setIsModalVisible(false); 
   };
 
   const handleOpenModal = () => {

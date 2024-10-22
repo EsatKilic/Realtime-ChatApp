@@ -1,5 +1,5 @@
-import { View, Text, KeyboardAvoidingView, ScrollView, Platform } from 'react-native'
-import React from 'react'
+import React from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 
 const ios = Platform.OS == 'ios';
 export default function CustomKeyboardView({children, inChat}) {

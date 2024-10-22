@@ -12,8 +12,8 @@ import { db } from '../../firebaseConfig';
 import { getRoomId } from '../../utils/common';
 
 export default function ChatRoom() {
-    const item = useLocalSearchParams(); // second user
-    const {user} = useAuth(); // logged in user
+    const item = useLocalSearchParams(); 
+    const {user} = useAuth(); 
     const router = useRouter();
     const [messages, setMessages] = useState([]);
     const [inputMessage, setInputMessage] = useState('');
