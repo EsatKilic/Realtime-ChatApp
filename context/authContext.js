@@ -1,93 +1,108 @@
-import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import {  createContext, useContext, useEffect, useState } from "react";
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "../firebaseConfig";
-import { addDoc, getDoc, setDoc } from "firebase/firestore";
-
-
 
 export const AuthContext = createContext();
 
-export const AuthContextProvider = ({Children}) => {
+export const AuthContextProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(undefined);
 
-    useEffect(()=>{
-       const unsub = onAuthStateChanged(auth,(user)=>{
+    useEffect(() => {
+        const unsub = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setIsAuthenticated(true);
+                setUser(user);
+                updateUserData(user.uid);
+            } else {
+                setIsAuthenticated(false);
+                setUser(null);
+            }
+        });
+        return unsub;
+    }, []);
 
-        if(user){
-            setIsAuthenticated(true);
-            setUser(user);
-            updateUserData(user.uid);
-        }else{
-            setIsAuthenticated(false);
-            setUser(null);
-        }
-       });
-       return unsub;
-    },[])
-    
-    const updateUserData = async (userId)=>{
-        const docRef = doc(db,'users', userId);
+    const updateUserData = async (userId) => {
+        const docRef = doc(db, 'users', userId);
         const docSnap = await getDoc(docRef);
-
-        if(docSnap.exists()){
+    
+        if (docSnap.exists()) {
             let data = docSnap.data();
-            setUser({...user, username: data.username, profileUrl: data.profileUrl, userId: data.userId})
+            setUser({
+                ...user,
+                username: data.username,
+                profileUrl: data.profileUrl,
+                userId: data.userId,
+                email: data.email || auth.currentUser.email
+            });
         }
-    }
+    };
 
-    const login = async (email,password) =>{
+    const login = async (email, password) => {
         try {
-          const response = await signInWithEmailAndPassword(auth,email,password);
-          return{success:true};
+            const response = await signInWithEmailAndPassword(auth, email, password);
+            return { success: true };
         } catch (e) {
-            let msg=e.message;
-            if(msg.includes('(auth/invalid-email)')) msg= 'Invalid email'
-            if(msg.includes('(auth/invalid-credential)')) msg= 'Wrong credentials'
-            return{success:false , msg};
+            let msg = e.message;
+            if (msg.includes('(auth/invalid-email)')) msg = 'Invalid email';
+            if (msg.includes('(auth/invalid-credential)')) msg = 'Wrong credentials';
+            return { success: false, msg };
         }
-    }
-    const logout = async () =>{
+    };
+
+    const logout = async () => {
         try {
             await signOut(auth);
-            return{success:true}
+            return { success: true };
         } catch (e) {
-            return{success:false, msg:e.message, error:e};
+            return { success: false, msg: e.message, error: e };
         }
-    }
-    const register = async (email,password,username,profileUrl) =>{
+    };
+
+    const register = async (email, password, username, profileUrl) => {
         try {
-            const response =await createUserWithEmailAndPassword(auth,email,password);
-            console.log('response.user:',response?.user);
+            const response = await createUserWithEmailAndPassword(auth, email, password);
 
-            // setUser(response?.user);
-            // setIsAuthenticated(true);
-
-            await setDoc(doc(db,"users", response?.user?.uid),{
+            await setDoc(doc(db, "users", response?.user?.uid), {
                 username,
                 profileUrl,
-                userId:response?.user?.uid
+                userId: response?.user?.uid,
+                email
             });
-            return {success: true,data:response?.user};
-        } catch (error) {
-            let msg=e.message;
-            if(msg.includes('(auth/invalid-email)')) msg= 'invalid email'
-            if(msg.includes('(auth/email-already-in-use)')) msg= 'This email is already in use'
-            return{success:false , msg};
+            return { success: true, data: response?.user };
+        } catch (e) {
+            let msg = e.message;
+            if (msg.includes('(auth/invalid-email)')) msg = 'Invalid email';
+            if (msg.includes('(auth/email-already-in-use)')) msg = 'This email is already in use';
+            return { success: false, msg };
         }
-    }
-    return(
-        <AuthContext.Provider value ={{user, isAuthenticated,login,register,logout}}>
-            {Children}
+    };
+
+    const resetAuth = async () => {
+        try {
+            await signOut(auth);
+            setUser(null);
+            setIsAuthenticated(false);
+            return { success: true };
+        } catch (e) {
+            console.error('Error resetting auth:', e);
+            return { success: false, msg: e.message };
+        }
+    };
+
+    return (
+        <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, resetAuth }}>
+            {children}
         </AuthContext.Provider>
-    )
+    );
+};
 
-
-}
-export const useAuth = ()=>{
+export const useAuth = () => {
     const value = useContext(AuthContext);
-    if(!value){
-        throw new Error('useAuth must be wrapped inside AuthContextProvider')
+
+    if (!value) {
+        throw new Error('useAuth must be wrapped inside AuthContextProvider');
     }
     return value;
-}
+};
