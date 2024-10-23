@@ -1,13 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { addDoc, collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { addDoc, collection, onSnapshot, orderBy, query, Timestamp } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, FlatList, Keyboard, Platform, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, FlatList, Keyboard, Platform, TextInput, TouchableOpacity, View } from 'react-native';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import GroupChatRoomHeader from '../../components/GroupChatRoomHeader';
 import MessageItem from '../../components/MessageItem';
 import { useAuth } from '../../context/authContext';
-import { db } from '../../firebaseConfig';
+import { db, storage } from '../../firebaseConfig';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -19,6 +22,7 @@ export default function GroupChatRoom() {
   const scrollViewRef = useRef(null);
   const { user } = useAuth();
   const [keyboardHeight] = useState(new Animated.Value(0));
+  const [isGroup, setIsGroup] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'groups', groupId, 'messages'), orderBy('createdAt', 'asc')); 
@@ -71,13 +75,103 @@ export default function GroupChatRoom() {
     }
   };
 
+  const openGroupDetails = () => {
+    router.push({
+      pathname: '/GroupDetail',
+      params: { groupId }
+    });
+  };
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please allow access to your gallery.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.5,
+      allowsEditing: true,
+    });
+    if (!result.canceled) {
+      await handleMediaUpload(result.assets[0].uri, 'image');
+    }
+  };
+
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*', 
+        copyToCacheDirectory: true,
+      });
+  
+      console.log(result); 
+  
+      if (result.type === 'success') {
+        const { uri, name } = result.assets[0]; 
+        console.log('Document URI:', uri); 
+        await handleMediaUpload(uri, 'document', name); 
+      } else if (result.type === 'cancel') {
+        Alert.alert('Document Selection Cancelled', 'You cancelled the document selection.');
+      } 
+     
+    } catch (error) {
+      Alert.alert('Error', 'Could not pick the document. Please try again.');
+      console.error('Document Picker Error:', error); 
+    }
+  };
+  
+  
+  
+  
+  
+
+  const handleMediaUpload = async (uri, type, fileName = '') => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      console.log('Fetched Blob:', blob); 
+  
+      const timestamp = new Date().getTime();
+      const path = `chat/${groupId}/${timestamp}_${fileName}`; 
+      const storageRef = ref(storage, path);
+      
+      const uploadResult = await uploadBytes(storageRef, blob);
+      console.log('Upload Result:', uploadResult); 
+      
+      const downloadURL = await getDownloadURL(uploadResult.ref);
+      
+      await addDoc(collection(db, 'groups', groupId, 'messages'), {
+        userId: user?.userId,
+        type: type,
+        mediaUrl: downloadURL,
+        fileName: fileName || `${timestamp}.docx`,
+        profileUrl: user?.profileUrl,
+        senderName: user?.username,
+        createdAt: Timestamp.fromDate(new Date())
+      });
+  
+      Alert.alert('Success', 'Document successfully sent!'); 
+    } catch (error) {
+      Alert.alert('Error', 'Failed to upload document: ' + error.message);
+      console.error('Upload Error:', error); 
+    }
+  };
+  
+
   const renderMessage = ({ item }) => (
-    <MessageItem message={item} currentUser={user} isGroup={true} />
+    <MessageItem message={item} currentUser={user} isGroup={isGroup} />
   );
 
   return (
     <View style={{ flex: 1 }}>
-      <GroupChatRoomHeader groupName={groupName} groupImage={groupImage} router={router} />
+<GroupChatRoomHeader 
+  groupName={groupName} 
+  groupImage={groupImage} 
+  router={router} 
+  onPress={openGroupDetails} 
+/>
       <Animated.View style={{ flex: 1, marginBottom: keyboardHeight }}>
         <FlatList
           data={messages}
@@ -97,6 +191,10 @@ export default function GroupChatRoom() {
           borderTopWidth: 1,
           borderTopColor: '#E5E5E5',
         }}>
+          <TouchableOpacity onPress={pickImage} style={{ padding: 10 }}>
+            <Ionicons name="image" size={30} color="#6366F1" />
+          </TouchableOpacity>
+          
           <View style={{
             flex: 1,
             backgroundColor: 'white',
@@ -121,7 +219,7 @@ export default function GroupChatRoom() {
           <TouchableOpacity 
             onPress={sendMessage} 
             style={{
-              backgroundColor: 'blue',
+              backgroundColor: '#6366F1',
               borderRadius: 25,
               padding: 10,
               justifyContent: 'center',
