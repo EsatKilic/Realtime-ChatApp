@@ -29,21 +29,26 @@ const CreateGroup = ({ onGroupCreated }) => {
       Alert.alert('Error', 'Please enter a group name.');
       return;
     }
-
+  
     if (selectedUsers.length === 0) {
       Alert.alert('Error', 'Please select at least one user.');
       return;
     }
-
+  
     try {
       const newGroup = {
         name: groupName.trim(),
-        members: selectedUsers,
         createdAt: new Date(),
         groupImage: groupImageUrl.trim() || null, 
       };
-
+  
       const groupRef = await addDoc(collection(db, 'groups'), newGroup);
+  
+      const membersRef = collection(db, 'groups', groupRef.id, 'members');
+      await Promise.all(selectedUsers.map(async (userId) => {
+        await addDoc(membersRef, { id: userId }); 
+      }));
+  
       onGroupCreated(groupRef.id, groupName.trim(), selectedUsers, groupImageUrl.trim() || null);
     } catch (error) {
       console.error("Error creating group:", error);
