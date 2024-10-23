@@ -54,6 +54,14 @@ export default function ChatItem({ item, router, noBorder, currentUser, isGroup 
     if (lastMessage) {
       const lastMessageUserId = lastMessage.userId;
       
+      if (lastMessage.type === 'image') {
+        return currentUser?.userId === lastMessageUserId 
+          ? "You: Image" 
+          : isGroup 
+            ? `${lastMessage.username}: Image` 
+            : "Image";
+      }
+
       if (currentUser?.userId === lastMessageUserId) {
         return "You: " + lastMessage.text;
       } else {
