@@ -1,36 +1,55 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from 'react-native-responsive-screen';
 
 export default function MessageItem({ message, currentUser, isGroup }) {
   const isOwnMessage = message.userId === currentUser.userId;
 
- 
+  const handleMediaPress = () => {
+    if (message.mediaUrl) {
+      Linking.openURL(message.mediaUrl);
+    }
+  };
+
+  const renderContent = () => {
+    if (message.type === 'image') {
+      return (
+        <TouchableOpacity onPress={handleMediaPress}>
+          <Image
+            source={{ uri: message.mediaUrl }}
+            style={styles.mediaImage}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      );
+    } else {
+      return <Text style={styles.messageText}>{message.text}</Text>;
+    }
+  };
 
   return (
-    <View style={styles.outerContainer}>
-      <View style={[
-        styles.messageContainer,
-        isOwnMessage ? styles.ownMessageContainer : styles.otherMessageContainer
-      ]}>
+    <View style={[
+      styles.messageContainer,
+      isOwnMessage ? styles.ownMessageContainer : styles.otherMessageContainer
+    ]}>
+      {isGroup && !isOwnMessage && (
+        <View style={styles.profileImageContainer}>
+          <Image
+            source={{ uri: message.userProfileUrl || 'https://via.placeholder.com/150' }}
+            style={styles.profileImage}
+          />
+        </View>
+      )}
+      <View style={styles.messageContent}>
         {isGroup && !isOwnMessage && (
-          <View style={styles.profileImageContainer}>
-            <Image
-              source={{ uri: message.userProfileUrl || 'https://via.placeholder.com/150' }}
-              style={styles.profileImage}
-            />
-          </View>
+          <Text style={styles.senderName}>{message.username}</Text>
         )}
-        <View style={styles.messageContent}>
-          {isGroup && !isOwnMessage && (
-            <Text style={styles.senderName}>{message.username}</Text>
-          )}
-          <View style={[
-            styles.messageBubble,
-            isOwnMessage ? styles.ownMessageBubble : styles.otherMessageBubble
-          ]}>
-            <Text style={styles.messageText}>{message.text}</Text>
-          </View>
+        <View style={[
+          styles.messageBubble,
+          isOwnMessage ? styles.ownMessageBubble : styles.otherMessageBubble,
+          message.type === 'image' && styles.mediaBubble
+        ]}>
+          {renderContent()}
         </View>
       </View>
     </View>
@@ -38,21 +57,22 @@ export default function MessageItem({ message, currentUser, isGroup }) {
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {
-    width: '100%',
-    alignItems: 'flex-end',
-  },
   messageContainer: {
+    marginVertical: hp(0.5),
     maxWidth: '80%',
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginVertical: hp(0.5),
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingBottom: 8,
   },
   ownMessageContainer: {
     alignSelf: 'flex-end',
+    marginLeft: 'auto',
   },
   otherMessageContainer: {
     alignSelf: 'flex-start',
+    marginRight: 'auto',
   },
   messageContent: {
     flexShrink: 1,
@@ -87,5 +107,15 @@ const styles = StyleSheet.create({
     width: hp(4),
     height: hp(4),
     borderRadius: hp(2),
+  },
+  // Medya için stiller
+  mediaImage: {
+    width: wp(50),
+    height: wp(50),
+    borderRadius: 10,
+  },
+  mediaBubble: {
+    padding: 2,
+    overflow: 'hidden',
   },
 });
