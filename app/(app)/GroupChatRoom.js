@@ -22,8 +22,7 @@ export default function GroupChatRoom() {
   const scrollViewRef = useRef(null);
   const { user } = useAuth();
   const [keyboardHeight] = useState(new Animated.Value(0));
-  const [isGroup, setIsGroup] = useState(false);
-
+const [isGroup, setIsGroup] = useState(true);
   useEffect(() => {
     const q = query(collection(db, 'groups', groupId, 'messages'), orderBy('createdAt', 'asc')); 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -62,16 +61,78 @@ export default function GroupChatRoom() {
     }
   }, [messages]);
 
-  const sendMessage = async () => {
-    if (inputMessage.trim().length > 0) {
-      await addDoc(collection(db, 'groups', groupId, 'messages'), {
-        text: inputMessage.trim(),
-        createdAt: new Date(),
-        userId: user.userId, 
-        username: user.username, 
-        userProfileUrl: user.profileUrl, 
+  
+
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('İzin Gerekli', 'Lütfen galeriye erişim izni verin.');
+        return;
+      }
+      
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.5,
+        allowsEditing: true,
       });
-      setInputMessage('');
+      
+      if (!result.canceled && result.assets && result.assets[0]) {
+        await handleMediaUpload(result.assets[0].uri, 'image', 'image.jpg');
+      }
+    } catch (error) {
+      console.error('Resim seçme hatası:', error);
+      Alert.alert('Hata', 'Resim seçilemedi: ' + error.message);
+    }
+  };
+
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true
+      });
+      
+      console.log('Document Pick Result:', result);
+  
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        console.log('Selected Document:', asset);
+  
+        try {
+          const downloadURL = await handleMediaUpload(
+            asset.uri,
+            'document',
+            asset.name
+          );
+          console.log('Document uploaded successfully:', downloadURL);
+        } catch (uploadError) {
+          console.error('Document upload error:', uploadError);
+          Alert.alert('Hata', 'Belge yüklenemedi: ' + uploadError.message);
+        }
+      }
+    } catch (err) {
+      console.error('Belge seçme hatası:', err);
+      Alert.alert('Hata', 'Belge seçilemedi: ' + err.message);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (inputMessage.trim()) {
+      try {
+        await addDoc(collection(db, 'groups', groupId, 'messages'), {
+          userId: user?.userId,
+          text: inputMessage.trim(),
+          type: 'text',
+          profileUrl: user?.profileUrl,
+          senderName: user?.username,
+          createdAt: Timestamp.fromDate(new Date())
+        });
+        setInputMessage('');
+      } catch (error) {
+        console.error("Mesaj gönderimi sırasında hata: ", error);
+        Alert.alert("Hata", "Mesaj gönderilemedi: " + error.message);
+      }
     }
   };
 
@@ -82,83 +143,48 @@ export default function GroupChatRoom() {
     });
   };
 
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please allow access to your gallery.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.5,
-      allowsEditing: true,
-    });
-    if (!result.canceled) {
-      await handleMediaUpload(result.assets[0].uri, 'image');
-    }
-  };
-
-  const pickDocument = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*', 
-        copyToCacheDirectory: true,
-      });
-  
-      console.log(result); 
-  
-      if (result.type === 'success') {
-        const { uri, name } = result.assets[0]; 
-        console.log('Document URI:', uri); 
-        await handleMediaUpload(uri, 'document', name); 
-      } else if (result.type === 'cancel') {
-        Alert.alert('Document Selection Cancelled', 'You cancelled the document selection.');
-      } 
-     
-    } catch (error) {
-      Alert.alert('Error', 'Could not pick the document. Please try again.');
-      console.error('Document Picker Error:', error); 
-    }
-  };
-  
-  
-  
-  
-  
-
   const handleMediaUpload = async (uri, type, fileName = '') => {
     try {
+      console.log('Starting media upload:', { uri, type, fileName });
+  
       const response = await fetch(uri);
-      const blob = await response.blob();
+      if (!response.ok) throw new Error('Dosya alınamadı');
       
-      console.log('Fetched Blob:', blob); 
+      const blob = await response.blob();
+      console.log('Blob created, size:', blob.size);
   
       const timestamp = new Date().getTime();
-      const path = `chat/${groupId}/${timestamp}_${fileName}`; 
+      const fileExtension = fileName.split('.').pop() || 'file';
+      const path = `chat/${groupId}/${timestamp}_${fileName}`;
+      console.log('Storage path:', path);
+  
       const storageRef = ref(storage, path);
-      
       const uploadResult = await uploadBytes(storageRef, blob);
-      console.log('Upload Result:', uploadResult); 
-      
+      console.log('Upload completed');
+  
       const downloadURL = await getDownloadURL(uploadResult.ref);
-      
+      console.log('Download URL obtained:', downloadURL);
+  
+      // Firestore'a mesaj ekleme
       await addDoc(collection(db, 'groups', groupId, 'messages'), {
         userId: user?.userId,
         type: type,
         mediaUrl: downloadURL,
-        fileName: fileName || `${timestamp}.docx`,
+        fileName: fileName,
+        fileSize: blob.size,
+        mimeType: type === 'document' ? blob.type : null,
         profileUrl: user?.profileUrl,
         senderName: user?.username,
         createdAt: Timestamp.fromDate(new Date())
       });
   
-      Alert.alert('Success', 'Document successfully sent!'); 
+      console.log('Message added to Firestore');
+      return downloadURL;
     } catch (error) {
-      Alert.alert('Error', 'Failed to upload document: ' + error.message);
-      console.error('Upload Error:', error); 
+      console.error('Upload Error:', error);
+      throw new Error('Dosya yüklenemedi: ' + error.message);
     }
   };
-  
 
   const renderMessage = ({ item }) => (
     <MessageItem message={item} currentUser={user} isGroup={isGroup} />
@@ -166,12 +192,12 @@ export default function GroupChatRoom() {
 
   return (
     <View style={{ flex: 1 }}>
-<GroupChatRoomHeader 
-  groupName={groupName} 
-  groupImage={groupImage} 
-  router={router} 
-  onPress={openGroupDetails} 
-/>
+      <GroupChatRoomHeader 
+        groupName={groupName} 
+        groupImage={groupImage} 
+        router={router} 
+        onPress={openGroupDetails} 
+      />
       <Animated.View style={{ flex: 1, marginBottom: keyboardHeight }}>
         <FlatList
           data={messages}
@@ -194,7 +220,11 @@ export default function GroupChatRoom() {
           <TouchableOpacity onPress={pickImage} style={{ padding: 10 }}>
             <Ionicons name="image" size={30} color="#6366F1" />
           </TouchableOpacity>
-          
+
+          <TouchableOpacity onPress={pickDocument} style={{ padding: 10 }}>
+            <Ionicons name="document" size={30} color="#6366F1" />
+          </TouchableOpacity>
+
           <View style={{
             flex: 1,
             backgroundColor: 'white',
@@ -207,7 +237,7 @@ export default function GroupChatRoom() {
             <TextInput 
               value={inputMessage}
               onChangeText={setInputMessage}
-              placeholder="Type a message..."
+              placeholder="Write a message..."
               placeholderTextColor={'gray'}
               style={{
                 fontSize: hp(2),
@@ -217,7 +247,7 @@ export default function GroupChatRoom() {
             />
           </View>
           <TouchableOpacity 
-            onPress={sendMessage} 
+            onPress={sendMessage}
             style={{
               backgroundColor: '#6366F1',
               borderRadius: 25,

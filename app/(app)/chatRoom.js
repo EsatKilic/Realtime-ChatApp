@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Timestamp, addDoc, collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, FlatList, Keyboard, Platform, TextInput, TouchableOpacity, View } from 'react-native';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import ChatRoomHeader from '../../components/ChatRoomHeader';
 import MessageItem from '../../components/MessageItem';
 import { useAuth } from '../../context/authContext';
-import { db } from '../../firebaseConfig';
+import { db, storage } from '../../firebaseConfig';
 import { getRoomId } from '../../utils/common';
 
 export default function ChatRoom() {
@@ -19,6 +22,8 @@ export default function ChatRoom() {
     const [inputMessage, setInputMessage] = useState('');
     const scrollViewRef = useRef(null);
     const [keyboardHeight] = useState(new Animated.Value(0));
+    const [isGroup, setIsGroup] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
         createRoomIfNotExists();
@@ -62,14 +67,10 @@ export default function ChatRoom() {
     }, []);
 
     useEffect(() => {
-        updateScrollView();
-    }, [messages])
-
-    const updateScrollView = () => {
-        setTimeout(() => {
-            scrollViewRef?.current?.scrollToEnd({animated: true})
-        }, 100)
-    }
+        if (messages.length > 0) {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+        }
+    }, [messages]);
 
     const createRoomIfNotExists = async () => {
         let roomId = getRoomId(user?.userId, item?.userId);
@@ -80,7 +81,11 @@ export default function ChatRoom() {
     }
 
     const renderMessage = ({ item }) => (
-        <MessageItem message={item} currentUser={user} />
+        <MessageItem 
+            message={item} 
+            currentUser={user} 
+            isGroup={false}
+        />
     );
 
     const handleSendMessage = async () => {
@@ -92,15 +97,101 @@ export default function ChatRoom() {
             await addDoc(messagesRef, {
                 userId: user?.userId,
                 text: inputMessage.trim(),
+                type: 'text',
                 profileUrl: user?.profileUrl,
                 senderName: user?.username,
                 createdAt: Timestamp.fromDate(new Date())
             });
             setInputMessage('');
         } catch (err) {
-            Alert.alert('Message', err.message);
+            Alert.alert('Hata', err.message);
         }
     }
+
+    const pickImage = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            
+            if (status !== 'granted') {
+                Alert.alert('İzin Gerekli', 'Lütfen galeri erişim iznini verin.');
+                return;
+            }
+    
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.5,
+                allowsEditing: true,
+            });
+    
+            if (!result.canceled && result.assets && result.assets[0]) {
+                await handleMediaUpload(result.assets[0].uri, 'image', 'image.jpg');
+            }
+        } catch (error) {
+            console.error("Resim seçme hatası:", error);
+            Alert.alert("Hata", "Resim seçilirken bir hata oluştu: " + error.message);
+        }
+    };
+
+    const pickDocument = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: '*/*',
+                copyToCacheDirectory: true
+            });
+            
+            if (!result.canceled && result.assets && result.assets[0]) {
+                const asset = result.assets[0];
+                
+                if (asset.size > 10 * 1024 * 1024) { // 10MB limit
+                    Alert.alert('Hata', 'Dosya boyutu 10MB\'dan küçük olmalıdır.');
+                    return;
+                }
+                
+                await handleMediaUpload(asset.uri, 'document', asset.name);
+            }
+        } catch (error) {
+            console.error('Belge seçme hatası:', error);
+            Alert.alert('Hata', 'Belge seçilemedi: ' + error.message);
+        }
+    };
+
+    const handleMediaUpload = async (uri, type, fileName = '') => {
+        setIsUploading(true);
+        try {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+
+            const roomId = getRoomId(user?.userId, item?.userId);
+            const timestamp = new Date().getTime();
+            const fileExtension = fileName.split('.').pop() || (type === 'image' ? 'jpg' : 'file');
+            const path = `chat/${roomId}/${timestamp}_${type}.${fileExtension}`;
+
+            const storageRef = ref(storage, path);
+            const uploadResult = await uploadBytes(storageRef, blob);
+            const downloadURL = await getDownloadURL(uploadResult.ref);
+
+            const docRef = doc(db, 'rooms', roomId);
+            const messagesRef = collection(docRef, "messages");
+            
+            await addDoc(messagesRef, {
+                userId: user?.userId,
+                type: type,
+                mediaUrl: downloadURL,
+                fileName: fileName || `${timestamp}.${fileExtension}`,
+                fileSize: blob.size,
+                mimeType: blob.type,
+                profileUrl: user?.profileUrl,
+                senderName: user?.username,
+                createdAt: Timestamp.fromDate(new Date())
+            });
+
+        } catch (error) {
+            console.error("Medya yükleme hatası:", error);
+            Alert.alert("Hata", "Dosya yüklenirken bir hata oluştu: " + error.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     return (
         <View style={{flex: 1}}>
@@ -125,6 +216,22 @@ export default function ChatRoom() {
                     borderTopWidth: 1,
                     borderTopColor: '#E5E5E5',
                 }}>
+                    <TouchableOpacity 
+                        onPress={pickImage} 
+                        style={{ padding: 10 }}
+                        disabled={isUploading}
+                    >
+                        <Ionicons name="image" size={30} color={isUploading ? '#A0A0A0' : '#6366F1'} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        onPress={pickDocument} 
+                        style={{ padding: 10 }}
+                        disabled={isUploading}
+                    >
+                        <Ionicons name="document" size={30} color={isUploading ? '#A0A0A0' : '#6366F1'} />
+                    </TouchableOpacity>
+
                     <View style={{
                         flex: 1,
                         backgroundColor: 'white',
@@ -134,32 +241,32 @@ export default function ChatRoom() {
                         marginRight: 10,
                         paddingHorizontal: 15,
                     }}>
-                        <TextInput 
+                        <TextInput
                             value={inputMessage}
                             onChangeText={setInputMessage}
-                            placeholder='Type message...'
+                            placeholder="Write a message..."
                             placeholderTextColor={'gray'}
                             style={{
                                 fontSize: hp(2),
                                 paddingVertical: 10,
                             }}
-                            onFocus={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+                            editable={!isUploading}
                         />
                     </View>
                     <TouchableOpacity 
-                        onPress={handleSendMessage} 
-                        style={{
-                            backgroundColor: 'blue',
-                            borderRadius: 25,
-                            padding: 10,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <Ionicons name="send" size={24} color="white" />
-                    </TouchableOpacity>
+    onPress={handleSendMessage}
+    style={{
+        backgroundColor: '#6366F1',
+        borderRadius: 25,
+        padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    }}
+>
+    <Ionicons name="send" size={24} color="white" />
+</TouchableOpacity>
                 </View>
             </Animated.View>
         </View>
-    )
+    );
 }
