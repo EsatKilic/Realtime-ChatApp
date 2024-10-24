@@ -53,20 +53,28 @@ export default function ChatItem({ item, router, noBorder, currentUser, isGroup 
     if (typeof lastMessage == 'undefined') return 'Loading...';
     if (lastMessage) {
       const lastMessageUserId = lastMessage.userId;
-      
-      if (lastMessage.type === 'image') {
-        return currentUser?.userId === lastMessageUserId 
-          ? "You: Image" 
-          : isGroup 
-            ? `${lastMessage.username}: Image` 
-            : "Image";
+      const isCurrentUser = currentUser?.userId === lastMessageUserId;
+      const senderName = isCurrentUser ? "You" : (lastMessage.senderName || "User");
+  
+      let messageContent = '';
+      switch (lastMessage.type) {
+        case 'image':
+          messageContent = 'Image';
+          break;
+        case 'document':
+          messageContent = 'Document';
+          break;
+        default:
+          messageContent = lastMessage.text;
       }
-
-      if (currentUser?.userId === lastMessageUserId) {
-        return "You: " + lastMessage.text;
-      } else {
-        return isGroup ? `${lastMessage.username}: ${lastMessage.text}` : lastMessage.text;
+  
+      if (isGroup && !isCurrentUser) {
+        return `${senderName}: ${messageContent}`;
       }
+  
+      return isCurrentUser 
+        ? `You: ${messageContent}`
+        : messageContent;
     } else {
       return 'Say Hi 👋';
     }
@@ -85,7 +93,15 @@ export default function ChatItem({ item, router, noBorder, currentUser, isGroup 
   return (
     <TouchableOpacity 
       onPress={openChatRoom} 
-      style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 16, paddingBottom: 8, borderBottomWidth: noBorder ? 0 : 1, borderBottomColor: '#D1D5DB' }}
+      style={{ 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        marginHorizontal: 16, 
+        marginBottom: 16, 
+        paddingBottom: 8, 
+        borderBottomWidth: noBorder ? 0 : 1, 
+        borderBottomColor: '#D1D5DB' 
+      }}
     >
       <Image
         style={{ height: hp(6), width: hp(6), borderRadius: 100, marginRight: 10 }}
@@ -102,9 +118,13 @@ export default function ChatItem({ item, router, noBorder, currentUser, isGroup 
             {renderTime()}
           </Text>
         </View>
-        <Text style={{ fontSize: hp(1.6), fontWeight: '500', color: '#6B7280' }}>
-          {renderLastMessage()}
-        </Text>
+        {typeof renderLastMessage() === 'string' ? (
+          <Text style={{ fontSize: hp(1.6), fontWeight: '500', color: '#6B7280' }}>
+            {renderLastMessage()}
+          </Text>
+        ) : (
+          renderLastMessage()
+        )}
       </View>
     </TouchableOpacity>
   );

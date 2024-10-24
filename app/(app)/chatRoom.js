@@ -104,7 +104,7 @@ export default function ChatRoom() {
             });
             setInputMessage('');
         } catch (err) {
-            Alert.alert('Hata', err.message);
+            Alert.alert('Error', err.message);
         }
     }
 
@@ -113,7 +113,7 @@ export default function ChatRoom() {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             
             if (status !== 'granted') {
-                Alert.alert('İzin Gerekli', 'Lütfen galeri erişim iznini verin.');
+                Alert.alert('Permission needed', 'Please grant gallery access permission.');
                 return;
             }
     
@@ -127,8 +127,8 @@ export default function ChatRoom() {
                 await handleMediaUpload(result.assets[0].uri, 'image', 'image.jpg');
             }
         } catch (error) {
-            console.error("Resim seçme hatası:", error);
-            Alert.alert("Hata", "Resim seçilirken bir hata oluştu: " + error.message);
+            console.error("Image selection error:", error);
+            Alert.alert("Error", "An error occurred while selecting the image: " + error.message);
         }
     };
 
@@ -142,16 +142,16 @@ export default function ChatRoom() {
             if (!result.canceled && result.assets && result.assets[0]) {
                 const asset = result.assets[0];
                 
-                if (asset.size > 10 * 1024 * 1024) { // 10MB limit
-                    Alert.alert('Hata', 'Dosya boyutu 10MB\'dan küçük olmalıdır.');
+                if (asset.size > 10 * 1024 * 1024) { 
+                    Alert.alert('Error', 'File size must be less than 10MB.');
                     return;
                 }
                 
                 await handleMediaUpload(asset.uri, 'document', asset.name);
             }
         } catch (error) {
-            console.error('Belge seçme hatası:', error);
-            Alert.alert('Hata', 'Belge seçilemedi: ' + error.message);
+            console.error('Image selection error:', error);
+            Alert.alert('Error', 'Document could not be selected: ' + error.message);
         }
     };
 
@@ -186,8 +186,8 @@ export default function ChatRoom() {
             });
 
         } catch (error) {
-            console.error("Medya yükleme hatası:", error);
-            Alert.alert("Hata", "Dosya yüklenirken bir hata oluştu: " + error.message);
+            console.error("Media upload error:", error);
+            Alert.alert("Error", "An error occurred while uploading the file: " + error.message);
         } finally {
             setIsUploading(false);
         }

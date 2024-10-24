@@ -13,11 +13,11 @@ export default function MessageItem({ message, currentUser, isGroup }) {
         if (supported) {
           await Linking.openURL(message.mediaUrl);
         } else {
-          Alert.alert('Hata', 'Bu dosya türü açılamıyor.');
+          Alert.alert('Error', 'This file type cannot be opened.');
         }
       } catch (error) {
-        console.error('Dosya açma hatası:', error);
-        Alert.alert('Hata', 'Dosya açılırken bir hata oluştu.');
+        console.error('File opening error:', error);
+        Alert.alert('Error', 'An error occurred while opening the file.');
       }
     }
   };
@@ -139,7 +139,6 @@ const styles = StyleSheet.create({
     height: hp(4),
     borderRadius: hp(2),
   },
-  // Medya ve belge için stiller
   mediaImage: {
     width: wp(50),
     height: wp(50),

@@ -67,7 +67,7 @@ const [isGroup, setIsGroup] = useState(true);
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('İzin Gerekli', 'Lütfen galeriye erişim izni verin.');
+        Alert.alert('Permission needed', 'Please grant access to the gallery.');
         return;
       }
       
@@ -81,8 +81,8 @@ const [isGroup, setIsGroup] = useState(true);
         await handleMediaUpload(result.assets[0].uri, 'image', 'image.jpg');
       }
     } catch (error) {
-      console.error('Resim seçme hatası:', error);
-      Alert.alert('Hata', 'Resim seçilemedi: ' + error.message);
+      console.error('Image selection error:', error);
+      Alert.alert('Error', 'Image could not be selected: ' + error.message);
     }
   };
 
@@ -93,27 +93,23 @@ const [isGroup, setIsGroup] = useState(true);
         copyToCacheDirectory: true
       });
       
-      console.log('Document Pick Result:', result);
   
       if (!result.canceled && result.assets && result.assets[0]) {
-        const asset = result.assets[0];
-        console.log('Selected Document:', asset);
-  
+        const asset = result.assets[0];  
         try {
           const downloadURL = await handleMediaUpload(
             asset.uri,
             'document',
             asset.name
           );
-          console.log('Document uploaded successfully:', downloadURL);
         } catch (uploadError) {
           console.error('Document upload error:', uploadError);
-          Alert.alert('Hata', 'Belge yüklenemedi: ' + uploadError.message);
+          Alert.alert('Error', 'Failed to load document: ' + uploadError.message);
         }
       }
     } catch (err) {
-      console.error('Belge seçme hatası:', err);
-      Alert.alert('Hata', 'Belge seçilemedi: ' + err.message);
+      console.error('Document selection error:', err);
+      Alert.alert('Error', 'Failed to load document: ' + err.message);
     }
   };
 
@@ -130,8 +126,8 @@ const [isGroup, setIsGroup] = useState(true);
         });
         setInputMessage('');
       } catch (error) {
-        console.error("Mesaj gönderimi sırasında hata: ", error);
-        Alert.alert("Hata", "Mesaj gönderilemedi: " + error.message);
+        console.error("Error while sending message: ", error);
+        Alert.alert("Error", "Message could not be sent: " + error.message);
       }
     }
   };
@@ -145,27 +141,21 @@ const [isGroup, setIsGroup] = useState(true);
 
   const handleMediaUpload = async (uri, type, fileName = '') => {
     try {
-      console.log('Starting media upload:', { uri, type, fileName });
   
       const response = await fetch(uri);
-      if (!response.ok) throw new Error('Dosya alınamadı');
+      if (!response.ok) throw new Error('The file could not be retrieved.');
       
       const blob = await response.blob();
-      console.log('Blob created, size:', blob.size);
   
       const timestamp = new Date().getTime();
       const fileExtension = fileName.split('.').pop() || 'file';
       const path = `chat/${groupId}/${timestamp}_${fileName}`;
-      console.log('Storage path:', path);
   
       const storageRef = ref(storage, path);
       const uploadResult = await uploadBytes(storageRef, blob);
-      console.log('Upload completed');
   
       const downloadURL = await getDownloadURL(uploadResult.ref);
-      console.log('Download URL obtained:', downloadURL);
   
-      // Firestore'a mesaj ekleme
       await addDoc(collection(db, 'groups', groupId, 'messages'), {
         userId: user?.userId,
         type: type,
@@ -178,11 +168,10 @@ const [isGroup, setIsGroup] = useState(true);
         createdAt: Timestamp.fromDate(new Date())
       });
   
-      console.log('Message added to Firestore');
       return downloadURL;
     } catch (error) {
       console.error('Upload Error:', error);
-      throw new Error('Dosya yüklenemedi: ' + error.message);
+      throw new Error('The file could not be loaded: ' + error.message);
     }
   };
 
