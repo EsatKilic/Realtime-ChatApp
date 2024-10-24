@@ -120,7 +120,7 @@ const Profile = () => {
     return (
         <SafeAreaView style={styles.container}>
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                <Feather name="arrow-left" size={24} color="black" />
+                <Feather name="arrow-left" size={24} color="#6366F1" />
             </TouchableOpacity>
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <Image
