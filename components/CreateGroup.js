@@ -26,35 +26,33 @@ const CreateGroup = ({ onGroupCreated }) => {
 
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
-      Alert.alert('Error', 'Please enter a group name.');
-      return;
+        Alert.alert('Error', 'Please enter a group name.');
+        return;
     }
   
     if (selectedUsers.length === 0) {
-      Alert.alert('Error', 'Please select at least one user.');
-      return;
+        Alert.alert('Error', 'Please select at least one user.');
+        return;
     }
   
     try {
-      const newGroup = {
-        name: groupName.trim(),
-        createdAt: new Date(),
-        groupImage: groupImageUrl.trim() || null, 
-      };
+        const newGroup = {
+            name: groupName.trim(),
+            createdAt: new Date(),
+            groupImage: groupImageUrl.trim() || null,
+            members: selectedUsers, // Üyeleri doğrudan burada ekleyin
+        };
   
-      const groupRef = await addDoc(collection(db, 'groups'), newGroup);
-  
-      const membersRef = collection(db, 'groups', groupRef.id, 'members');
-      await Promise.all(selectedUsers.map(async (userId) => {
-        await addDoc(membersRef, { id: userId }); 
-      }));
-  
-      onGroupCreated(groupRef.id, groupName.trim(), selectedUsers, groupImageUrl.trim() || null);
+        const groupRef = await addDoc(collection(db, 'groups'), newGroup);
+        
+        onGroupCreated(groupRef.id, groupName.trim(), selectedUsers, groupImageUrl.trim() || null);
     } catch (error) {
-      console.error("Error creating group:", error);
-      Alert.alert('Error', 'There was an error creating the group. Please try again.');
+        console.error("Error creating group:", error);
+        Alert.alert('Error', `There was an error creating the group: ${error.message}`);
     }
   };
+  
+
 
   const toggleUserSelection = (userId) => {
     setSelectedUsers(prevSelected => {

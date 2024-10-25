@@ -20,7 +20,8 @@
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "The app accesses your photos to let you share them with your friends.",
         "NSCameraUsageDescription": "The app uses the camera to let you take photos to share with your friends."
-      }
+      },
+      "bundleIdentifier": "com.muratesatk.MekChatApp"
     },
     "android": {
       "adaptiveIcon": {
@@ -28,10 +29,13 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ]
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.muratesatk.MekChatApp",
+      "versionCode": 9 
     },
     "web": {
       "bundler": "metro",
@@ -45,10 +49,24 @@
           "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ],
-      "expo-router"
+      "expo-router",
+      "expo-updates" 
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/f2335a4e-4747-44b1-bb39-cf9ff91bac73"
+    },
+    "runtimeVersion": { 
+      "policy": "sdkVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f2335a4e-4747-44b1-bb39-cf9ff91bac73"
+      }
     }
   }
 }
