@@ -35,7 +35,10 @@
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.muratesatk.MekChatApp",
-      "versionCode": 9 
+      "versionCode": 9,
+      "compileSdkVersion": 33,
+      "targetSdkVersion": 33,
+      "minSdkVersion": 21
     },
     "web": {
       "bundler": "metro",
