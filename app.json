@@ -36,9 +36,9 @@
       ],
       "package": "com.muratesatk.MekChatApp",
       "versionCode": 9,
-      "compileSdkVersion": 33,
-      "targetSdkVersion": 33,
-      "minSdkVersion": 21
+      "minSdk": 21,               
+      "compileSdk": 33,           
+      "targetSdk": 33 
     },
     "web": {
       "bundler": "metro",
