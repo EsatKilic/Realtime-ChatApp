@@ -14,3 +14,7 @@ local.properties
 
 # Bundle artifacts
 *.jsbundle
+
+# Ignore Android and iOS directories
+/android
+/ios

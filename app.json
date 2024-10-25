@@ -34,11 +34,7 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.muratesatk.MekChatApp",
-      "versionCode": 9,
-      "minSdk": 21,               
-      "compileSdk": 33,           
-      "targetSdk": 33 
+      "package": "com.muratesatk.MekChatApp"
     },
     "web": {
       "bundler": "metro",
