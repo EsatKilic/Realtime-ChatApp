@@ -1,45 +1,40 @@
 {
   "cli": {
-    "version": ">= 5.9.1"
+    "version": ">= 5.9.1",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
       "android": {
+        "gradleCommand": ":app:assembleDebug",
         "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug"
+        "gradleEnvironment": {
+          "GRADLE_OPTS": "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxPermSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8'"
+        }
       },
       "channel": "development"
     },
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "gradleEnvironment": {
+          "GRADLE_OPTS": "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxPermSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8'"
+        }
       },
       "channel": "preview"
-    },
-    "preview2": {
-      "android": {
-        "gradleCommand": ":app:assembleRelease"
-      },
-      "channel": "preview2"
-    },
-    "preview3": {
-      "developmentClient": true,
-      "channel": "preview3"
-    },
-    "preview4": {
-      "distribution": "internal",
-      "channel": "preview4"
     },
     "production": {
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease"
+        "gradleEnvironment": {
+          "GRADLE_OPTS": "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx2048m -XX:MaxPermSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8'"
+        }
       },
-      "channel": "production",
-      "autoIncrement": true
+      "channel": "production"
     }
   },
   "submit": {
